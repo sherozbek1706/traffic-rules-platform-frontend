@@ -1,0 +1,1 @@
+const Attemp = () => {return <h1>Salom</h1>}
