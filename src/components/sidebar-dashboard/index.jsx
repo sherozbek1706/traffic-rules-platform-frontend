@@ -79,6 +79,18 @@ export const SidebarDashboard = ({
     try {
       return JSON.parse(localStorage.getItem("sidebar:collapsed") || "false");
     } catch {
+      return false;
+    }
+  });
+  const collapsed =
+    typeof collapsedProp === "boolean" ? collapsedProp : collapsedInternal;
+
+  function toggleCollapsed() {
+    if (onCollapseToggle) return onCollapseToggle();
+    setCollapsedInternal((c) => {
+      const next = !c;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("sidebar:collapsed", JSON.stringify(next));
       }
       return next;
     });
@@ -104,6 +116,20 @@ export const SidebarDashboard = ({
       {
         id: "groups",
         label: "Groups",
+        icon: HiUserGroup,
+        path: "/dashboard-panel-admin/xyz/groups",
+        roles: ["admin", "super_admin"],
+      },
+      {
+        id: "group-admins",
+        label: "Group Admins",
+        icon: HiMiniRectangleGroup,
+        path: "/dashboard-panel-admin/xyz/group-admins",
+        roles: ["super_admin"],
+      },
+      {
+        id: "students",
+        label: "Students",
         icon: HiUserGroup,
         path: "/dashboard-panel-admin/xyz/students",
         roles: ["admin", "super_admin"],
@@ -131,6 +157,21 @@ export const SidebarDashboard = ({
     return allMenuItems.filter((m) => m.roles.includes(role));
   }, [allMenuItems, role]);
 
+  const isActive = (menuPath) =>
+    currentPath === menuPath ||
+    (menuPath !== "/dashboard-panel-admin/xyz" &&
+      currentPath.startsWith(menuPath + "/"));
+
+  const handleLogout = () => {
+    window.localStorage.clear();
+    success_notify("Tizimdan chiqdingiz!");
+    setTimeout(() => {
+      window.location.assign("/dashboard-panel-admin/xyz/login");
+    }, 1000);
+  };
+
+  // While checking token/role, avoid rendering sidebar to prevent flicker
+  if (!token || !role) return null;
 
   // Widths must match Layout (expanded: w-80 => 20rem, collapsed: w-20 => 5rem)
   const baseWidthClass = collapsed ? "w-20" : "w-80";
@@ -150,6 +191,8 @@ export const SidebarDashboard = ({
           fixed inset-y-0 left-0 z-[100] ${baseWidthClass}
           bg-gradient-to-b from-gray-900 via-gray-850 to-gray-900 text-white
           border-r border-white/10 shadow-2xl
+          transform transition-transform duration-300 ease-in-out
+          ${isOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0
           flex flex-col
         `}
         // allow horizontal scroll for long labels in rare cases
@@ -176,6 +219,19 @@ export const SidebarDashboard = ({
           <button
             onClick={onToggle}
             className="lg:hidden rounded-lg p-2 hover:bg-white/10"
+            aria-label="Close sidebar"
+          >
+            <HiX className="h-5 w-5 text-white/80" />
+          </button>
+        </div>
+
+        {/* Collapse button (desktop) */}
+        <div className="px-3">
+          <button
+            onClick={toggleCollapsed}
+            className="
+              group flex w-full items-center gap-3 rounded-xl border border-white/10
+              bg-white/5 px-3 py-2 text-sm text-white/80 transition
               hover:bg-white/10 hover:text-white
             "
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -192,6 +248,13 @@ export const SidebarDashboard = ({
           </button>
         </div>
 
+        {/* Navigation */}
+        <nav className="mt-4 flex-1 space-y-1 px-3">
+          {/* Section label */}
+          {!collapsed && (
+            <div className="px-2 pb-1 pt-3 text-xs font-semibold uppercase tracking-wider text-white/50">
+              Main Menu
+            </div>
           )}
 
           {menuItems.map((item) => {
@@ -227,3 +290,52 @@ export const SidebarDashboard = ({
                 </div>
 
                 {!collapsed && (
+                  <span className="truncate font-medium">{item.label}</span>
+                )}
+
+                {/* Active indicator */}
+                {active && (
+                  <span className="absolute right-2 h-2 w-2 rounded-full bg-blue-400" />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Footer / User & Logout */}
+        <div className="border-t border-white/10 px-3 py-4">
+          {!collapsed && (
+            <div className="mb-3 flex items-center gap-3">
+              <img
+                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+                alt="avatar"
+                className="h-9 w-9 rounded-full ring-2 ring-white/20"
+              />
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium">
+                  {profile?.first_name} {profile?.last_name}
+                </div>
+                <div className="text-[11px] text-white/60">
+                  {role === "super_admin" ? "SUPER ADMIN" : "ADMIN"}
+                </div>
+              </div>
+            </div>
+          )}
+          <button
+            className="
+              group flex w-full items-center gap-3 rounded-xl border border-transparent
+              px-3 py-2 text-white/80 transition hover:border-red-400/30
+              hover:bg-red-500/15 hover:text-red-200
+            "
+            onClick={handleLogout}
+          >
+            <div className="grid h-9 w-9 place-items-center rounded-lg bg-red-500/20 group-hover:bg-red-500/25">
+              <HiLogout className="h-5 w-5" />
+            </div>
+            {!collapsed && <span className="font-medium">Logout</span>}
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+};
