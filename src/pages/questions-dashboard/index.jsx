@@ -1,3 +1,284 @@
+import { useEffect, useMemo, useState, useRef } from "react";
+import { LayoutDashboard } from "../../components";
+import {
+  adminGetRequest,
+  adminPostRequest,
+  adminPutRequest,
+  adminDeleteRequest,
+} from "../../request";
+import { AnimatePresence, motion } from "framer-motion";
+
+// ---- Helpers ----
+function emptyForm() {
+  return {
+    id: null,
+    content: "",
+    admin_id: 1,
+    image: null,
+    image_url: "",
+    options: [
+      { id: null, content: "", is_correct: false, explanation: "" },
+      { id: null, content: "", is_correct: false, explanation: "" },
+    ],
+  };
+}
+
+export const QuestionsDashboard = () => {
+  // ---- State ----
+  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState([]);
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(emptyForm());
+  const [submitting, setSubmitting] = useState(false);
+
+  const fileUrlRef = useRef(null);
+
+  // ---- Derived ----
+  const filtered = useMemo(() => {
+    if (!query.trim()) return items;
+    const q = query.toLowerCase();
+    return items.filter((x) => stripHtml(x.content).toLowerCase().includes(q));
+  }, [items, query]);
+
+  const total = filtered.length;
+  const pagesCount = Math.max(1, Math.ceil(total / pageSize));
+  const paged = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, page, pageSize]);
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  useEffect(() => {
+    // reset pagination when filters change
+    setPage(1);
+  }, [query, pageSize]);
+
+  useEffect(() => {
+    // ESC to close modal
+    const onKey = (e) => {
+      if (e.key === "Escape") closeModal();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [modalOpen]);
+
+  useEffect(() => {
+    // revoke previous object URL to avoid memory leaks
+    return () => {
+      if (fileUrlRef.current) URL.revokeObjectURL(fileUrlRef.current);
+    };
+  }, []);
+
+  // ---- API ----
+  async function load() {
+    setLoading(true);
+    try {
+      const res = await adminGetRequest(
+        `/assessments/questions/list?with_options=true`
+      );
+      const data = res?.data || [];
+      setItems(data);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function openCreate() {
+    setEditing(null);
+    setForm(emptyForm());
+    setModalOpen(true);
+  }
+
+  function openEdit(q) {
+    setEditing(q);
+    setForm({
+      id: q.id,
+      content: q.content || "",
+      admin_id: q.admin_id ?? 1,
+      image: null,
+      image_url: q.image_url || "",
+      options: (q.options || []).map((o) => ({
+        id: o.id ?? null,
+        content: o.content || "",
+        is_correct: !!o.is_correct,
+        explanation: o.explanation || "",
+      })),
+    });
+    setModalOpen(true);
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    setEditing(null);
+    setForm(emptyForm());
+  }
+
+  // ---- Form helpers ----
+  function setOption(idx, patch) {
+    setForm((f) => {
+      const next = { ...f };
+      next.options = [...f.options];
+      next.options[idx] = { ...next.options[idx], ...patch };
+      return next;
+    });
+  }
+
+  function addOption() {
+    setForm((f) => ({
+      ...f,
+      options: [
+        ...f.options,
+        { id: null, content: "", is_correct: false, explanation: "" },
+      ],
+    }));
+  }
+
+  function removeOption(idx) {
+    setForm((f) => ({ ...f, options: f.options.filter((_, i) => i !== idx) }));
+  }
+
+  function markCorrect(idx) {
+    setForm((f) => ({
+      ...f,
+      options: f.options.map((o, i) => ({ ...o, is_correct: i === idx })),
+    }));
+  }
+
+  function onFile(e) {
+    const file = e.target.files?.[0] || null;
+    setForm((f) => {
+      const url = file ? URL.createObjectURL(file) : f.image_url;
+      if (fileUrlRef.current) URL.revokeObjectURL(fileUrlRef.current);
+      fileUrlRef.current = file ? url : null;
+      return { ...f, image: file, image_url: file ? url : f.image_url };
+    });
+  }
+
+  function validate() {
+    const errs = [];
+    if (!stripHtml(form.content).trim()) errs.push("Savol matni kerak");
+    if (form.options.length < 2)
+      errs.push("Kamida 2 ta variant bo'lishi kerak");
+    const correctCount = form.options.filter((o) => o.is_correct).length;
+    if (correctCount !== 1) errs.push("Aynan 1 ta to'g'ri javob belgilang");
+    if (errs.length) throw new Error(errs.join(""));
+  }
+
+  async function onSubmit(e) {
+    e?.preventDefault?.();
+    try {
+      validate();
+    } catch (err) {
+      alert(err.message || String(err));
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      let res;
+      if (form.image) {
+        const fd = new FormData();
+        fd.append("content", form.content);
+        fd.append("admin_id", String(form.admin_id ?? 1));
+        fd.append(
+          "options",
+          JSON.stringify(form.options.map(({ id, ...rest }) => rest))
+        );
+        fd.append("image", form.image);
+
+        if (editing) {
+          res = await adminPutRequest(
+            `/assessments/questions/edit/${form.id}`,
+            fd,
+            { headers: { "Content-Type": "multipart/form-data" } }
+          );
+        } else {
+          res = await adminPostRequest(`/assessments/questions/add`, fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+        }
+      } else {
+        const payload = {
+          content: form.content,
+          admin_id: form.admin_id ?? 1,
+          options: form.options,
+        };
+        if (editing) {
+          res = await adminPutRequest(
+            `/assessments/questions/edit/${form.id}`,
+            payload
+          );
+        } else {
+          res = await adminPostRequest(`/assessments/questions/add`, payload);
+        }
+      }
+
+      if (res?.data) {
+        closeModal();
+        await load();
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err?.response?.data?.message || err.message || "Xatolik yuz berdi");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function onDelete(q) {
+    if (!confirm("Ushbu savolni o'chirasizmi?")) return;
+    setLoading(true);
+    try {
+      await adminDeleteRequest(`/assessments/questions/remove/${q.id}`);
+      await load();
+    } catch (err) {
+      console.error(err);
+      alert(
+        err?.response?.data?.message || err.message || "O'chirishda xatolik"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ---- UI ----
+  return (
+    <LayoutDashboard>
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Questions</h1>
+            <p className="text-sm text-neutral-500">
+              Barcha savollar, rasm va variantlar bilan.
+            </p>
+          </div>
+
+          <div className="flex w-full items-center gap-3 sm:w-auto">
+            <div className="relative w-full sm:w-72">
+              <input
+                className="w-full rounded-xl border border-neutral-200 bg-white/60 px-10 py-2.5 text-sm outline-none ring-0 transition focus:border-neutral-300 focus:shadow-sm focus:shadow-neutral-200 dark:border-neutral-800 dark:bg-neutral-900"
+                placeholder="Search content…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+            </div>
+            <button
+              onClick={openCreate}
+              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-tr from-neutral-900 to-neutral-700 px-4 py-2.5 text-sm font-medium text-white shadow-sm ring-1 ring-black/5 transition hover:opacity-95 active:opacity-90 dark:from-white dark:to-neutral-200 dark:text-neutral-900"
+            >
+              <PlusIcon className="mr-2 h-4 w-4" /> New Question
+            </button>
+          </div>
         </header>
 
         {/* Stats & Controls */}
@@ -417,4 +698,56 @@ function PlusIcon({ className = "" }) {
       />
     </svg>
   );
+}
+
+function EditIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M12 20h9"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function TrashIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M3 6h18"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10 11v6M14 11v6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+// ---- Utils ----
+function stripHtml(html) {
+  if (!html) return "";
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "";
 }
