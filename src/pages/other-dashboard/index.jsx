@@ -118,6 +118,37 @@ const ICONS = {
       <circle cx="12" cy="6" r="2" fill="currentColor" />
       <circle cx="18" cy="6" r="2" fill="currentColor" />
       <circle cx="6" cy="12" r="2" fill="currentColor" />
+      <circle cx="12" cy="12" r="2" fill="currentColor" />
+      <circle cx="18" cy="12" r="2" fill="currentColor" />
+      <circle cx="6" cy="18" r="2" fill="currentColor" />
+      <circle cx="12" cy="18" r="2" fill="currentColor" />
+      <circle cx="18" cy="18" r="2" fill="currentColor" />
+    </svg>
+  ),
+  groupAdmins: (props) => (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <circle cx="8" cy="9" r="3" fill="currentColor" />
+      <path d="M3 19a5 5 0 0 1 10 0v1H3v-1Z" fill="currentColor" opacity=".5" />
+      <path
+        d="M15.5 8a2.5 2.5 0 1 1 5 0v1.5a6 6 0 0 1-3 5.2 6 6 0 0 1-3-5.2V8Z"
+        fill="currentColor"
+      />
+      <path
+        d="M18 7.5c.8 0 1.5.7 1.5 1.5S18.8 10.5 18 10.5 16.5 9.8 16.5 9 17.2 7.5 18 7.5Z"
+        fill="#fff"
+      />
+    </svg>
+  ),
+  default: (props) => (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+      <circle cx="12" cy="12" r="10" fill="currentColor" />
+    </svg>
+  ),
+};
+
+// ----------------------------- ACTIONS ------------------------------------
+// All routes mapped with { icon, name, to }
+const ACTIONS = [
   {
     icon: "home",
     name: "Home",
@@ -135,6 +166,22 @@ const ICONS = {
   },
   {
     icon: "groups",
+    name: "Groups",
+    to: "/dashboard-panel-admin/xyz/groups",
+  },
+  {
+    icon: "questions",
+    name: "Questions",
+    to: "/dashboard-panel-admin/xyz/questions",
+  },
+  {
+    icon: "tests",
+    name: "Tests",
+    to: "/dashboard-panel-admin/xyz/tests",
+  },
+  {
+    icon: "links",
+    name: "Links (Q → Test)",
     to: "/dashboard-panel-admin/xyz/links",
   },
   {
@@ -150,6 +197,19 @@ const ICONS = {
   {
     icon: "groupAdmins",
     name: "Group Admins",
+    to: "/dashboard-panel-admin/xyz/group-admins",
+  },
+];
+
+// Optional helper if you want to render by name:
+// export const Icon = ({ name, className = "h-6 w-6" }) => {
+//   const Comp = ICONS[name] || ICONS.default;
+//   return <Comp className={className} />;
+// };
+
+// ------------------------------ Components --------------------------------
+function Icon({ name, className = "h-6 w-6" }) {
+  const Comp = ICONS[name] || ICONS.default;
   return <Comp className={className} />;
 }
 
