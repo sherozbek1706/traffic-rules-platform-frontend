@@ -5,3 +5,16 @@ export * from "./login-dashboard";
 export * from "./admins-dashboard";
 export * from "./groups-dashboard";
 export * from "./group-admins-dashboard";
+
+export * from "./register";
+export * from "./students-dashboard";
+export * from "./my-group-dashboard";
+export * from "./questions-dashboard";
+export * from "./tests-dashboard";
+export * from "./links-dashboard";
+export * from "./other-dashboard";
+export * from "./tests";
+export * from "./start-test";
+export * from "./attemp";
+export * from "./attempt-result";
+export * from "./student-stats-panel";
