@@ -39,3 +39,39 @@ export const adminDeleteRequest = async (url, config) => {
   }
 };
 
+// ========== CLIENT REQUEST HELPERS ==========
+export const clientGetRequest = async (url, config) => {
+  try {
+    const { data } = await clientAxiosInstance.get(url, config);
+    return data;
+  } catch (error) {
+    Errors(error);
+  }
+};
+
+export const clientPostRequest = async (url, payload, config) => {
+  try {
+    const { data } = await clientAxiosInstance.post(url, payload, config);
+    return data;
+  } catch (error) {
+    Errors(error);
+  }
+};
+
+export const clientPutRequest = async (url, payload, config) => {
+  try {
+    const { data } = await clientAxiosInstance.put(url, payload, config);
+    return data;
+  } catch (error) {
+    Errors(error);
+  }
+};
+
+export const clientDeleteRequest = async (url, config) => {
+  try {
+    const { data } = await clientAxiosInstance.delete(url, config);
+    return data;
+  } catch (error) {
+    Errors(error);
+  }
+};
