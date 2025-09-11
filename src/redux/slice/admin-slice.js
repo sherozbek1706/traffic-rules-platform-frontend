@@ -5,6 +5,35 @@ import {
   adminGetRequest,
   adminPostRequest,
   adminPutRequest,
+} from "../../request/index.js";
+
+export const loginAdmin = createAsyncThunk(
+  "admin/login",
+  async (data, { rejectWithValue }) => {
+    try {
+      const response = await adminPostRequest("/admin/login", data);
+      return response?.data;
+    } catch (error) {
+      return rejectWithValue(Errors(error));
+    }
+  }
+);
+
+export const profileAdmin = createAsyncThunk(
+  "admin/profile",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await adminGetRequest("/admin/profile");
+      return response?.data;
+    } catch (error) {
+      return rejectWithValue(Errors(error));
+    }
+  }
+);
+
+export const listAdmin = createAsyncThunk(
+  "admin/list",
+  async (_, { rejectWithValue }) => {
     try {
       const response = await adminGetRequest("/admin/list");
       return response?.data;
