@@ -1,8 +1,3 @@
-// ================================
-// src/services/groupAdmin.service.js
-// Works with your axios helpers. If your helpers live elsewhere, adjust the import path.
-// Base URL is assumed to be /api/v1 on adminAxiosInstance, so paths here are /admin/*
-// ================================
 import {
   adminGetRequest,
   adminPostRequest,

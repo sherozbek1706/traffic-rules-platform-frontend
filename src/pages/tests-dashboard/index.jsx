@@ -1,7 +1,7 @@
 // src/pages/tests-dashboard/index.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { LayoutDashboard } from "../../components";
-
+import { baseURL } from "../../shared/constants";
 /**
  * Tests-only Dashboard
  * ------------------------------------------------------
@@ -12,20 +12,33 @@ import { LayoutDashboard } from "../../components";
  *   o‘sha holicha yuboriladi
  */
 
-const BASE_URL = "http://localhost:5000";
-const TOKEN = localStorage.getItem("admin_token") || "";
-
 /* ----------------------------- API Helper ----------------------------- */
 async function apiFetch(path, { method = "GET", json, headers = {} } = {}) {
-  const url = path.startsWith("http") ? path : `${BASE_URL}${path}`;
+  // 1) Tokenni har safar yangidan olamiz (eskirib qolmasin)
+  const token = localStorage.getItem("admin_token") || "";
+
+  // 2) baseURL (import qilingan) bilan pathni toza birlashtiramiz
+  const buildUrl = (base, p) => {
+    const b = String(base || "").replace(/\/+$/, ""); // ohirgi / larni kes
+    const q = String(p || "").replace(/^\/+/, ""); // boshidagi / larni kes
+    return `${b}/${q}`;
+  };
+  const url = path.startsWith("http") ? path : buildUrl(baseURL, path);
+
   const opts = {
     method,
-    headers: { Authorization: `${TOKEN}`, ...headers },
+    headers: {
+      // Agar backend "Bearer ..." kutsa, shu qatorda Bearer qo‘ying:
+      // Authorization: `Bearer ${token}`,
+      Authorization: `${token}`,
+      ...headers,
+    },
   };
   if (json !== undefined) {
     opts.headers["Content-Type"] = "application/json";
     opts.body = JSON.stringify(json);
   }
+
   const res = await fetch(url, opts);
   let data = null;
   try {
@@ -286,7 +299,7 @@ export const TestsDashboard = () => {
     setLoading(true);
     setErr("");
     try {
-      const res = await apiFetch("/api/v1/assessments/tests/list");
+      const res = await apiFetch("/assessments/tests/list");
       const list = res?.data || res || [];
       setTests(Array.isArray(list) ? list : []);
     } catch (e) {
@@ -386,7 +399,7 @@ export const TestsDashboard = () => {
           time_limit_sec: Number(form.time_limit_sec || 0),
           admin_id: 1, // kerak bo‘lsa moslang
         };
-        await apiFetch("/api/v1/assessments/tests/add", {
+        await apiFetch("/assessments/tests/add", {
           method: "POST",
           json: payload,
         });
@@ -399,7 +412,7 @@ export const TestsDashboard = () => {
           time_limit_sec: Number(form.time_limit_sec || 0),
         };
         await apiFetch(
-          `/api/v1/assessments/tests/edit/${encodeURIComponent(editing.id)}`,
+          `/assessments/tests/edit/${encodeURIComponent(editing.id)}`,
           {
             method: "PUT",
             json: payload,
@@ -425,10 +438,9 @@ export const TestsDashboard = () => {
     );
     setTests(optimistic);
     try {
-      await apiFetch(
-        `/api/v1/assessments/tests/publish/${encodeURIComponent(t.id)}`,
-        { method: "PATCH" }
-      );
+      await apiFetch(`/assessments/tests/publish/${encodeURIComponent(t.id)}`, {
+        method: "PATCH",
+      });
       pushToast({ title: "Published", type: "success" });
     } catch (e) {
       pushToast({ title: "Publish failed", desc: e.message, type: "error" });
@@ -444,7 +456,7 @@ export const TestsDashboard = () => {
     setTests(optimistic);
     try {
       await apiFetch(
-        `/api/v1/assessments/tests/unpublish/${encodeURIComponent(t.id)}`,
+        `/assessments/tests/unpublish/${encodeURIComponent(t.id)}`,
         { method: "PATCH" }
       );
       pushToast({ title: "Unpublished", type: "success" });
@@ -458,10 +470,9 @@ export const TestsDashboard = () => {
     const backup = tests;
     setTests((prev) => prev.filter((x) => x.id !== t.id));
     try {
-      await apiFetch(
-        `/api/v1/assessments/tests/remove/${encodeURIComponent(t.id)}`,
-        { method: "DELETE" }
-      );
+      await apiFetch(`/assessments/tests/remove/${encodeURIComponent(t.id)}`, {
+        method: "DELETE",
+      });
       pushToast({ title: "Test deleted", type: "success" });
     } catch (e) {
       pushToast({ title: "Delete failed", desc: e.message, type: "error" });

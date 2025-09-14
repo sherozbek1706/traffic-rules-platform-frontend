@@ -33,16 +33,6 @@ export const MyGroupDashboard = () => {
       let res;
       if (typeof adminGetRequest === "function") {
         res = await adminGetRequest("/admin/my-group");
-      } else {
-        const rawToken = window.localStorage.getItem("admin_token") || "";
-        const token = rawToken.startsWith("Bearer ")
-          ? rawToken
-          : `Bearer ${rawToken}`;
-        const r = await fetch("/api/v1/admin/my-group", {
-          headers: { Authorization: token },
-        });
-        if (!r.ok) throw new Error((await r.text()) || `HTTP ${r.status}`);
-        res = { data: await r.json() };
       }
       setData(res.data || { groups: [], total_groups: 0, total_students: 0 });
     } catch (e) {

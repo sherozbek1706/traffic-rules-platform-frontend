@@ -18,7 +18,6 @@ export const Tests = () => {
       try {
         setErr("");
         setLoading(true);
-        // your client adds /api/v1 prefix under the hood
         const res = await clientGetRequest("/assessments/tests/list");
         const list = Array.isArray(res?.data)
           ? res.data

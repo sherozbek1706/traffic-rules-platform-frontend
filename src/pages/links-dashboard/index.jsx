@@ -1,32 +1,28 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { LayoutDashboard } from "../../components";
-
-/** =========================================================================
- * LinksDashboard
- * Manage links between Tests and Questions (attach, bulk-add, reorder, remove)
- * Endpoints (base http://localhost:5000):
- *  - POST  /api/v1/assessments/test-questions/add
- *  - POST  /api/v1/assessments/test-questions/bulk-add
- *  - GET   /api/v1/assessments/test-questions/list?test_id=:id
- *  - PUT   /api/v1/assessments/test-questions/edit/:id   (body: { order })
- *  - DELETE/api/v1/assessments/test-questions/remove/:id
- *  - GET   /api/v1/assessments/tests/list
- *  - GET   /api/v1/assessments/tests/one/:id   (includes linked questions & options)
- *  - GET   /api/v1/assessments/questions/list?with_options=false
- * ========================================================================= */
-
-const BASE_URL = "http://localhost:5000";
-const TOKEN = localStorage.getItem("admin_token") || ""; // adjust storage if needed
+import { baseURL } from "../../shared/constants";
 
 async function apiFetch(
   path,
   { method = "GET", json, formData, headers = {} } = {}
 ) {
-  const url = path.startsWith("http") ? path : `${BASE_URL}${path}`;
+  // tokenni har chaqiruvda o'qish (stale bo'lmasin)
+  const token = localStorage.getItem("admin_token") || "";
+
+  // baseURL va path-ni xavfsiz birlashtirish
+  const buildUrl = (base, p) => {
+    const b = base.replace(/\/+$/, "");
+    const q = String(p || "").replace(/^\/+/, "");
+    return `${b}/${q}`;
+  };
+
+  const url = path.startsWith("http") ? path : buildUrl(baseURL, path);
+
   const baseHeaders = {
-    Authorization: `${TOKEN}`, // backend examples show raw token (no "Bearer ")
+    Authorization: `${token}`, // backend raw token kutsa – Bearer emas
     ...headers,
   };
+
   const options = { method, headers: baseHeaders };
 
   if (json !== undefined) {
@@ -42,7 +38,7 @@ async function apiFetch(
   try {
     data = await res.json();
   } catch {
-    // ignore
+    // agar JSON bo'lmasa jim o'tamiz
   }
   if (!res.ok) {
     const message =
@@ -348,7 +344,7 @@ function LinksDashboard() {
     (async () => {
       try {
         setTestsLoading(true);
-        const res = await apiFetch("/api/v1/assessments/tests/list");
+        const res = await apiFetch("/assessments/tests/list");
         setTests(Array.isArray(res?.data) ? res.data : res || []);
       } catch (e) {
         pushToast({
@@ -367,7 +363,7 @@ function LinksDashboard() {
       try {
         setQuestionsLoading(true);
         const res = await apiFetch(
-          "/api/v1/assessments/questions/list?with_options=false"
+          "/assessments/questions/list?with_options=false"
         );
         setQuestions(Array.isArray(res?.data) ? res.data : res || []);
       } catch (e) {
@@ -398,9 +394,7 @@ function LinksDashboard() {
     setLinksLoading(true);
     try {
       const res = await apiFetch(
-        `/api/v1/assessments/test-questions/list?test_id=${encodeURIComponent(
-          tid
-        )}`
+        `/assessments/test-questions/list?test_id=${encodeURIComponent(tid)}`
       );
       const list = Array.isArray(res?.data) ? res.data : res || [];
       // Normalize orders (fallback to index+1)
@@ -430,7 +424,7 @@ function LinksDashboard() {
     setDetailLoading(true);
     try {
       const res = await apiFetch(
-        `/api/v1/assessments/tests/one/${encodeURIComponent(tid)}`
+        `/assessments/tests/one/${encodeURIComponent(tid)}`
       );
       setTestDetail(res?.data || res || null);
     } catch (e) {
@@ -534,7 +528,7 @@ function LinksDashboard() {
       const nextOrder = links.length
         ? Math.max(...links.map((l) => l.order || 0)) + 1
         : 1;
-      await apiFetch("/api/v1/assessments/test-questions/add", {
+      await apiFetch("/assessments/test-questions/add", {
         method: "POST",
         json: { test_id: Number(testId), question_id: qid, order: nextOrder },
       });
@@ -573,7 +567,7 @@ function LinksDashboard() {
     }
 
     try {
-      await apiFetch("/api/v1/assessments/test-questions/bulk-add", {
+      await apiFetch("/assessments/test-questions/bulk-add", {
         method: "POST",
         json: { test_id: Number(testId), question_ids: unique },
       });
@@ -604,9 +598,7 @@ function LinksDashboard() {
       setLinks((arr) => arr.filter((l) => l.id !== link.id));
       try {
         await apiFetch(
-          `/api/v1/assessments/test-questions/remove/${encodeURIComponent(
-            link.id
-          )}`,
+          `/assessments/test-questions/remove/${encodeURIComponent(link.id)}`,
           { method: "DELETE" }
         );
         pushToast({ title: "Link removed", type: "success" });
@@ -651,11 +643,11 @@ function LinksDashboard() {
 
     try {
       await apiFetch(
-        `/api/v1/assessments/test-questions/edit/${encodeURIComponent(a.id)}`,
+        `/assessments/test-questions/edit/${encodeURIComponent(a.id)}`,
         { method: "PUT", json: { order: newAOrder } }
       );
       await apiFetch(
-        `/api/v1/assessments/test-questions/edit/${encodeURIComponent(b.id)}`,
+        `/assessments/test-questions/edit/${encodeURIComponent(b.id)}`,
         { method: "PUT", json: { order: newBOrder } }
       );
     } catch (e) {
