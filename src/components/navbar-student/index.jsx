@@ -78,6 +78,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import logo from "../../assets/logo.png";
 
 export const NavbarStudent = ({ me }) => {
   const { pathname } = useLocation();
@@ -146,11 +147,13 @@ export const NavbarStudent = ({ me }) => {
             </button>
 
             <Link to="/" className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-xl bg-blue-600 text-white grid place-items-center shadow">
-                <span className="font-bold">S</span>
+              <div className="min-h-12 max-w-12 min-w-12 max-h-12 rounded-xl  text-white grid place-items-center">
+                {/* <div className="h-9 w-9 rounded-xl bg-blue-600 text-white grid place-items-center shadow"> */}
+                {/* <span className="font-bold">S</span> */}
+                <img src={logo} className="min-h-12 max-w-12 min-w-12 max-h-12 rounded-xl" alt="" />
               </div>
               <span className="font-semibold text-gray-900">
-                Student Portal
+                AVTOTEST EXPRESS
               </span>
             </Link>
 

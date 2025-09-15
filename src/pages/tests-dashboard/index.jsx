@@ -1188,108 +1188,110 @@ function RecommendationsManager({ test, open, onClose }) {
         </>
       }
     >
-      {/* Form */}
-      <div className="grid gap-3 rounded-xl border border-neutral-200 p-4">
-        <Input
-          id="r-title"
-          label="Title"
-          required
-          value={form.title}
-          onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-        />
-        <Textarea
-          id="r-desc"
-          label="Description"
-          value={form.description}
-          onChange={(e) =>
-            setForm((f) => ({ ...f, description: e.target.value }))
-          }
-        />
-        <Input
-          id="r-link"
-          label="Video link"
-          placeholder="https://..."
-          value={form.video_link}
-          onChange={(e) =>
-            setForm((f) => ({ ...f, video_link: e.target.value }))
-          }
-        />
-        <div className="flex items-center gap-2">
-          {!editing ? (
-            <Button variant="success" onClick={save} disabled={saving}>
-              {saving && <Spinner />} Create
-            </Button>
+      <div className="grid max-h-[70vh] grid-rows-[auto,1fr] gap-4">
+        {/* Form */}
+        <div className="grid gap-3 rounded-xl border border-neutral-200 p-4">
+          <Input
+            id="r-title"
+            label="Title"
+            required
+            value={form.title}
+            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+          />
+          <Textarea
+            id="r-desc"
+            label="Description"
+            value={form.description}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, description: e.target.value }))
+            }
+          />
+          <Input
+            id="r-link"
+            label="Video link"
+            placeholder="https://..."
+            value={form.video_link}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, video_link: e.target.value }))
+            }
+          />
+          <div className="flex items-center gap-2">
+            {!editing ? (
+              <Button variant="success" onClick={save} disabled={saving}>
+                {saving && <Spinner />} Create
+              </Button>
+            ) : (
+              <Button onClick={save} disabled={saving}>
+                {saving && <Spinner />} Save changes
+              </Button>
+            )}
+            {editing && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setEditing(null);
+                  setForm({ title: "", description: "", video_link: "" });
+                }}
+              >
+                Cancel edit
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* List */}
+        <div className="min-h-0 overflow-y-auto overscroll-contain pr-1">
+          {loading ? (
+            <div className="flex items-center gap-3 p-3">
+              <Spinner />
+              <span className="text-sm text-neutral-600">Loading…</span>
+            </div>
+          ) : err ? (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-900">
+              {err}
+            </div>
+          ) : !items.length ? (
+            <div className="rounded-xl border border-dashed border-neutral-300 p-6 text-center text-sm text-neutral-600">
+              No recommendations yet.
+            </div>
           ) : (
-            <Button onClick={save} disabled={saving}>
-              {saving && <Spinner />} Save changes
-            </Button>
-          )}
-          {editing && (
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setEditing(null);
-                setForm({ title: "", description: "", video_link: "" });
-              }}
-            >
-              Cancel edit
-            </Button>
+            <ul className="grid gap-2">
+              {items.map((it) => (
+                <li
+                  key={it.id}
+                  className="flex items-start justify-between gap-3 rounded-xl border border-neutral-200 p-3"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate font-medium">{it.title}</div>
+                    {it.description && (
+                      <div className="truncate text-sm text-neutral-600 w-96">
+                        {it.description}
+                      </div>
+                    )}
+                    {it.video_link && (
+                      <a
+                        href={it.video_link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-blue-700 underline break-all"
+                      >
+                        {it.video_link}
+                      </a>
+                    )}
+                  </div>
+                  <div className="shrink-0 space-x-2">
+                    <Button variant="ghost" onClick={() => openEdit(it)}>
+                      Edit
+                    </Button>
+                    <Button variant="danger" onClick={() => remove(it)}>
+                      Delete
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
-      </div>
-
-      {/* List */}
-      <div className="mt-4">
-        {loading ? (
-          <div className="flex items-center gap-3 p-3">
-            <Spinner />
-            <span className="text-sm text-neutral-600">Loading…</span>
-          </div>
-        ) : err ? (
-          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-900">
-            {err}
-          </div>
-        ) : !items.length ? (
-          <div className="rounded-xl border border-dashed border-neutral-300 p-6 text-center text-sm text-neutral-600">
-            No recommendations yet.
-          </div>
-        ) : (
-          <ul className="grid gap-2">
-            {items.map((it) => (
-              <li
-                key={it.id}
-                className="flex items-start justify-between gap-3 rounded-xl border border-neutral-200 p-3"
-              >
-                <div className="min-w-0">
-                  <div className="truncate font-medium">{it.title}</div>
-                  {it.description && (
-                    <div className="truncate text-sm text-neutral-600 w-96">
-                      {it.description}
-                    </div>
-                  )}
-                  {it.video_link && (
-                    <a
-                      href={it.video_link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs text-blue-700 underline break-all"
-                    >
-                      {it.video_link}
-                    </a>
-                  )}
-                </div>
-                <div className="shrink-0 space-x-2">
-                  <Button variant="ghost" onClick={() => openEdit(it)}>
-                    Edit
-                  </Button>
-                  <Button variant="danger" onClick={() => remove(it)}>
-                    Delete
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
     </Modal>
   );

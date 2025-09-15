@@ -526,7 +526,7 @@ export const Attempt = () => {
           {total ? (
             <div className="grid gap-4 lg:grid-cols-[1fr,360px]">
               {/* Question panel */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+              {/* <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
                 <div className="mb-3 flex items-center justify-between">
                   <div className="text-xs text-slate-500">
                     Savol {idx + 1} / {total}
@@ -610,6 +610,331 @@ export const Attempt = () => {
                     );
                   })}
                 </div>
+                <div className="mt-5 flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => setIdx((i) => Math.max(0, i - 1))}
+                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
+                    disabled={idx === 0}
+                  >
+                    ← Oldingi
+                  </button>
+                  <div className="hidden sm:block text-xs text-slate-500">
+                    Tanlangan: {selectedOptionId ? `#${selectedOptionId}` : "—"}
+                  </div>
+                  <button
+                    onClick={() => setIdx((i) => Math.min(total - 1, i + 1))}
+                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
+                    disabled={idx === total - 1}
+                  >
+                    Keyingi →
+                  </button>
+                </div>
+              </div> */}
+
+              {/* Question panel */}
+              {/* <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="text-xs text-slate-500">
+                    Savol {idx + 1} / {total}
+                  </div>
+                  {current?.order != null && (
+                    <span className="text-[11px] text-slate-400">
+                      Order: {current.order}
+                    </span>
+                  )}
+                </div>
+
+                
+                {current ? (
+                  <div className="grid gap-4 lg:grid-cols-12 lg:items-start">
+                    
+                    <section className="lg:col-span-7">
+                      {current?.image_url && (
+                        <div className="mb-3">
+                          <img
+                            src={`${current.image_url}`}
+                            alt="Question"
+                            className="max-h-[70vh] w-full rounded-xl border border-slate-200 object-contain cursor-zoom-in"
+                            onClick={() => setLightboxUrl(current.image_url)}
+                          />
+                          <div className="mt-1 text-[11px] text-slate-500">
+                            Rasmni kattalashtirish uchun bosing
+                          </div>
+                        </div>
+                      )}
+
+                      {lightboxUrl && (
+                        <div
+                          className="fixed inset-0 z-50 bg-black/80 p-4"
+                          onClick={() => setLightboxUrl(null)}
+                        >
+                          <div className="mx-auto grid h-full max-w-5xl place-items-center">
+                            <img
+                              src={lightboxUrl}
+                              alt="Preview"
+                              className="max-h-[90vh] w-auto rounded-xl object-contain"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setLightboxUrl(null)}
+                              className="mt-3 rounded-lg bg-white/90 px-3 py-1 text-sm text-slate-900 hover:bg-white"
+                            >
+                              Yopish
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="whitespace-pre-wrap break-words text-slate-900">
+                        {current?.content}
+                      </div>
+                    </section>
+
+                    <section className="lg:col-span-5">
+                      <div className="lg:sticky lg:top-20 lg:max-h-[70vh] lg:overflow-auto lg:pr-1">
+                        <div className="mt-4 grid gap-2">
+                          {(current?.options || []).map((o, idxOpt) => {
+                            const active = selectedOptionId === o.id;
+                            const locked = selectedOptionId !== null; // lock after answer
+                            return (
+                              <button
+                                key={o.id}
+                                disabled={
+                                  isFinished(data) || busyAnswer || locked
+                                }
+                                onClick={() => handleSelect(current.id, o.id)}
+                                className={[
+                                  "w-full rounded-2xl border px-4 py-3 text-left transition",
+                                  "grid grid-cols-[28px,1fr] items-start gap-3",
+                                  active
+                                    ? "border-slate-900 bg-slate-900 text-white"
+                                    : "border-slate-200 bg-white hover:bg-slate-50",
+                                  (isFinished(data) || busyAnswer || locked) &&
+                                    "cursor-not-allowed",
+                                ].join(" ")}
+                                role="radio"
+                                aria-checked={active}
+                              >
+                                <span
+                                  className={[
+                                    "mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ring-1",
+                                    active
+                                      ? "bg-white/10 text-white ring-white/30"
+                                      : "bg-slate-100 text-slate-700 ring-slate-200",
+                                  ].join(" ")}
+                                >
+                                  {letter(idxOpt)}
+                                </span>
+                                <span className="whitespace-pre-wrap break-words text-sm">
+                                  {o.content}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                ) : (
+                  <div className="text-slate-500">Savol topilmadi.</div>
+                )}
+
+                <div className="mt-5 flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => setIdx((i) => Math.max(0, i - 1))}
+                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
+                    disabled={idx === 0}
+                  >
+                    ← Oldingi
+                  </button>
+                  <div className="hidden sm:block text-xs text-slate-500">
+                    Tanlangan: {selectedOptionId ? `#${selectedOptionId}` : "—"}
+                  </div>
+                  <button
+                    onClick={() => setIdx((i) => Math.min(total - 1, i + 1))}
+                    className="rounded-lg border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50 disabled:opacity-50"
+                    disabled={idx === total - 1}
+                  >
+                    Keyingi →
+                  </button>
+                </div>
+              </div> */}
+
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-sm">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="text-xs text-slate-500">
+                    Savol {idx + 1} / {total}
+                  </div>
+                  {current?.order != null && (
+                    <span className="text-[11px] text-slate-400">
+                      Order: {current.order}
+                    </span>
+                  )}
+                </div>
+
+                {/* ---- RESPONSIVE LAYOUT ----
+      lg+: chapda rasm; o‘ngda savol (bold) + variantlar (yonma-yon)
+      mobil/planshet: rasm → savol → variantlar (stack) */}
+                {current ? (
+                  <div className="grid gap-4 lg:grid-cols-12 lg:items-start">
+                    {/* LEFT: Image only */}
+                    <section className="lg:col-span-7">
+                      {current?.image_url && (
+                        <div className="mb-3">
+                          <img
+                            src={`${current.image_url}`}
+                            alt="Question"
+                            className="max-h-[70vh] w-full rounded-xl border border-slate-200 object-contain cursor-zoom-in"
+                            onClick={() => setLightboxUrl(current.image_url)}
+                          />
+                          <div className="mt-1 text-[11px] text-slate-500">
+                            Rasmni kattalashtirish uchun bosing
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Lightbox */}
+                      {lightboxUrl && (
+                        <div
+                          className="fixed inset-0 z-50 bg-black/80 p-4"
+                          onClick={() => setLightboxUrl(null)}
+                        >
+                          <div className="mx-auto grid h-full max-w-5xl place-items-center">
+                            <img
+                              src={lightboxUrl}
+                              alt="Preview"
+                              className="max-h-[90vh] w-auto rounded-xl object-contain"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setLightboxUrl(null)}
+                              className="mt-3 rounded-lg bg-white/90 px-3 py-1 text-sm text-slate-900 hover:bg-white"
+                            >
+                              Yopish
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </section>
+
+                    {/* RIGHT: Question (bold) + Options (sticky on desktop) */}
+                    <section className="lg:col-span-5">
+                      <div className="lg:sticky lg:top-20 lg:max-h-[70vh] lg:overflow-auto lg:pr-1">
+                        {/* SAVOL MATNI — BOLD, VARIANTLAR TEPASIDA */}
+                        <h2 className="text-base sm:text-lg md:text-xl font-bold text-slate-900">
+                          {current?.content}
+                        </h2>
+
+                        {/* VARIANTLAR */}
+                        {/* <div
+                          className="mt-4 grid gap-2"
+                          role="radiogroup"
+                          aria-label="Variantlar"
+                        >
+                          {(current?.options || []).map((o, idxOpt) => {
+                            const active = selectedOptionId === o.id;
+                            const locked = selectedOptionId !== null; // lock after answer
+                            const abLabel = `${letter(idxOpt).toLowerCase()})`; // a) b) c) ...
+
+                            return (
+                              <button
+                                key={o.id}
+                                disabled={
+                                  isFinished(data) || busyAnswer || locked
+                                }
+                                onClick={() => handleSelect(current.id, o.id)}
+                                className={[
+                                  "w-full rounded-2xl border px-4 py-3 text-left transition",
+                                  "grid grid-cols-[auto,1fr] items-start gap-3",
+                                  active
+                                    ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+                                    : "border-slate-200 bg-white hover:bg-slate-50",
+                                  (isFinished(data) || busyAnswer || locked) &&
+                                    "cursor-not-allowed",
+                                ].join(" ")}
+                                role="radio"
+                                aria-checked={active}
+                              >
+                                <span
+                                  className={[
+                                    "mt-[2px] font-mono text-sm",
+                                    active ? "text-white/90" : "text-slate-500",
+                                  ].join(" ")}
+                                >
+                                  {abLabel}
+                                </span>
+
+                                <span
+                                  className={[
+                                    "whitespace-pre-wrap break-words text-sm leading-6",
+                                    active ? "text-white" : "text-slate-800",
+                                  ].join(" ")}
+                                >
+                                  {o.content}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div> */}
+
+                        {/* VARIANTLAR (timeline-style A/B/C + vertikal chiziq) */}
+                        <div
+                          className="mt-4 relative pl-12 before:content-[''] before:absolute before:inset-y-0 before:left-6 before:w-px before:bg-slate-200 before:z-0"
+                          role="radiogroup"
+                          aria-label="Variantlar"
+                        >
+                          {(current?.options || []).map((o, idxOpt) => {
+                            const active = selectedOptionId === o.id;
+                            const locked = selectedOptionId !== null; // lock after answer
+                            const L = letter(idxOpt); // 'A', 'B', 'C', ...
+
+                            return (
+                              <button
+                                key={o.id}
+                                disabled={
+                                  isFinished(data) || busyAnswer || locked
+                                }
+                                onClick={() => handleSelect(current.id, o.id)}
+                                className={[
+                                  "relative z-[1] mb-2 w-full rounded-2xl border px-4 py-3 text-left transition",
+                                  active
+                                    ? "border-slate-900 bg-slate-900 text-white shadow-sm"
+                                    : "border-slate-200 bg-white hover:bg-slate-50",
+                                  (isFinished(data) || busyAnswer || locked) &&
+                                    "cursor-not-allowed",
+                                ].join(" ")}
+                                role="radio"
+                                aria-checked={active}
+                              >
+                                {/* Chapdagi A/B/C belgisi — vertikal chiziq ustida markazda */}
+                                <span
+                                  className={[
+                                    "absolute -left-10 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ring-1",
+                                    active
+                                      ? "bg-slate-900 text-white ring-slate-900"
+                                      : "bg-white text-slate-700 ring-slate-300",
+                                  ].join(" ")}
+                                  aria-hidden
+                                >
+                                  {L}
+                                </span>
+
+                                {/* Variant matni */}
+                                <span className="block whitespace-pre-wrap break-words text-sm leading-6">
+                                  {o.content}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                ) : (
+                  <div className="text-slate-500">Savol topilmadi.</div>
+                )}
+
+                {/* Prev / Next */}
                 <div className="mt-5 flex items-center justify-between gap-2">
                   <button
                     onClick={() => setIdx((i) => Math.max(0, i - 1))}

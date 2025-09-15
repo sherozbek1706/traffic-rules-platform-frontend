@@ -16,6 +16,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { jwtDecode } from "jwt-decode";
 import { success_notify } from "../../shared/notify";
+import logo from "../../assets/logo.png";
 
 // ---------------------------------------------------------------------------
 // New SidebarDashboard
@@ -200,8 +201,12 @@ export const SidebarDashboard = ({
         {/* Header / Brand */}
         <div className="relative flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
-              <MdOutlineSpaceDashboard className="h-6 w-6 text-white" />
+            <div className="grid h-12 w-12 place-items-center bg-white rounded-xl bg-gradient-to-br shadow-lg">
+              <img
+                src={logo}
+                className="h-12 w-12 rounded-xl text-white"
+                alt=""
+              />
             </div>
             {!collapsed && (
               <div className="min-w-0">
