@@ -22,6 +22,7 @@ import {
   StartTest,
   Attempt,
   AttemptResult,
+  MyStatsStudent,
 } from "../../pages";
 import { LayoutStudent } from "../../components";
 
@@ -36,6 +37,7 @@ const protectedRoutes = [
   { path: "/tests/:id/start", element: <StartTest /> },
   { path: "/attempts/:attemptId", element: <Attempt /> },
   { path: "/attempts/:attemptId/result", element: <AttemptResult /> },
+  { path: "/my-stats", element: <MyStatsStudent /> },
 ];
 const protectedDashboardRoutes = [
   {

@@ -279,9 +279,9 @@ export const StudentStatsPanel = ({ open, onClose, student }) => {
                                               <th className="px-3 py-2 text-left font-medium">
                                                 Status
                                               </th>
-                                              <th className="px-3 py-2 text-left font-medium w-28">
+                                              {/* <th className="px-3 py-2 text-left font-medium w-28">
                                                 Open
-                                              </th>
+                                              </th> */}
                                             </tr>
                                           </thead>
                                           <tbody className="divide-y divide-slate-100">
@@ -326,7 +326,7 @@ export const StudentStatsPanel = ({ open, onClose, student }) => {
                                                         : "In progress"}
                                                     </span>
                                                   </td>
-                                                  <td className="px-3 py-2">
+                                                  {/* <td className="px-3 py-2">
                                                     {a.is_finished ? (
                                                       <Link
                                                         to={`/attempts/${a.id}/result`}
@@ -342,7 +342,7 @@ export const StudentStatsPanel = ({ open, onClose, student }) => {
                                                         Open
                                                       </Link>
                                                     )}
-                                                  </td>
+                                                  </td> */}
                                                 </tr>
                                               ))}
                                           </tbody>
@@ -398,7 +398,7 @@ export const StudentStatsPanel = ({ open, onClose, student }) => {
                               <span className="text-xs text-slate-500">
                                 {a.correct_count}/{a.answered_count} correct
                               </span>
-                              {a.is_finished ? (
+                              {/* {a.is_finished ? (
                                 <Link
                                   to={`/attempts/${a.id}/result`}
                                   className="rounded-lg bg-slate-900 text-white px-2.5 py-1 text-xs hover:bg-black"
@@ -412,7 +412,7 @@ export const StudentStatsPanel = ({ open, onClose, student }) => {
                                 >
                                   Open
                                 </Link>
-                              )}
+                              )} */}
                             </div>
                           </div>
                         </li>
