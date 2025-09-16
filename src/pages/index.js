@@ -18,3 +18,4 @@ export * from "./start-test";
 export * from "./attemp";
 export * from "./attempt-result";
 export * from "./student-stats-panel";
+export * from "./my-stats-student";
