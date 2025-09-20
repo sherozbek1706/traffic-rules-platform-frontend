@@ -65,7 +65,7 @@ export const Tests = () => {
                 <h3 className="line-clamp-2 text-base font-semibold text-gray-900">
                   {t.title}
                 </h3>
-                <span className="rounded-lg bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+                <span className=" min-w-[60px] rounded-lg bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
                   {fmtSecs(t.time_limit_sec)}
                 </span>
               </div>

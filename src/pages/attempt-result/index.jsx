@@ -275,6 +275,7 @@
 import { useEffect, useMemo, useState, Fragment, useCallback } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
 import { clientGetRequest, adminGetRequest } from "../../request";
+import { baseURL } from "../../shared/constants";
 
 /** Ranglar va ohanglar */
 const toneForPercent = (p) => {
@@ -386,6 +387,9 @@ export const AttemptResult = () => {
   const [err, setErr] = useState("");
   const [filter, setFilter] = useState("all"); // all | wrong | correct
 
+  // yuqoridagi importlar yonida yoki component boshida:
+  const [ackRecs, setAckRecs] = useState(false); // tavsiyalarni o‘qidim holati
+
   // Admin’dan keldimi?
   const fromState = location.state?.from || "";
   const isAdminQuery =
@@ -423,35 +427,83 @@ export const AttemptResult = () => {
           attemptPayload?.test?.id ??
           null;
 
-        // 2) Test (har doim testdan olib kelamiz)
-        let questions = [];
-        if (testId) {
+        // // 2) Test (har doim testdan olib kelamiz)
+        // let questions = [];
+        // if (testId) {
+        //   const tRes = await getFn(
+        //     `/assessments/tests/one/${encodeURIComponent(testId)}`
+        //   );
+        //   const testObj = tRes?.data?.data || tRes?.data || tRes;
+        //   const qs = Array.isArray(testObj?.questions) ? testObj.questions : [];
+        //   questions = [...qs].sort((a, b) => (a.order || 0) - (b.order || 0));
+        //   setData({
+        //     attempt,
+        //     answers: answersArr,
+        //     test: testObj,
+        //     questions,
+        //   });
+        // } else {
+        //   // fallback
+        //   const qs =
+        //     attemptPayload?.questions ||
+        //     attemptPayload?.attempt?.questions ||
+        //     [];
+        //   questions = [...qs].sort((a, b) => (a.order || 0) - (b.order || 0));
+        //   setData({
+        //     attempt,
+        //     answers: answersArr,
+        //     test: attemptPayload?.test || null,
+        //     questions,
+        //   });
+        // }
+
+        // 2) Savollarni avvalo attempt'dan olamiz (tanlangan subset + position)
+        let questions =
+          attemptPayload?.questions || attemptPayload?.attempt?.questions || [];
+
+        // NEW: recommendations
+        const recommendations =
+          attemptPayload?.recommendations ||
+          attemptPayload?.attempt?.recommendations ||
+          [];
+
+        // position bor bo‘lsa shuni, bo‘lmasa order bo‘yicha sort
+        questions = [...questions].sort((a, b) => {
+          const ao = a.position ?? a.order ?? 0;
+          const bo = b.position ?? b.order ?? 0;
+          return ao - bo;
+        });
+
+        // 3) Answers: root-level bo‘lsa olamiz, bo‘lmasa savol ichidagi `answer`dan hosil qilamiz
+        let answers = answersArr;
+        if (!answers?.length && questions?.length) {
+          answers = questions
+            .map((q) => ({
+              question_id: q.id,
+              option_id:
+                q?.answer?.option_id ?? q?.answer?.selected_option_id ?? null,
+            }))
+            .filter((x) => x.option_id != null);
+        }
+
+        // 4) Agar attempt savollari bo‘sh bo‘lsa (legacy fallback) — shunda testdan olamiz
+        let testObj = attemptPayload?.test || null;
+        if ((!questions || !questions.length) && testId) {
           const tRes = await getFn(
             `/assessments/tests/one/${encodeURIComponent(testId)}`
           );
-          const testObj = tRes?.data?.data || tRes?.data || tRes;
+          testObj = tRes?.data?.data || tRes?.data || tRes;
           const qs = Array.isArray(testObj?.questions) ? testObj.questions : [];
           questions = [...qs].sort((a, b) => (a.order || 0) - (b.order || 0));
-          setData({
-            attempt,
-            answers: answersArr,
-            test: testObj,
-            questions,
-          });
-        } else {
-          // fallback
-          const qs =
-            attemptPayload?.questions ||
-            attemptPayload?.attempt?.questions ||
-            [];
-          questions = [...qs].sort((a, b) => (a.order || 0) - (b.order || 0));
-          setData({
-            attempt,
-            answers: answersArr,
-            test: attemptPayload?.test || null,
-            questions,
-          });
         }
+
+        setData({
+          attempt,
+          answers,
+          test: testObj,
+          questions,
+          recommendations, // ⬅️ qo‘shildi
+        });
       } catch (e) {
         setErr(e?.response?.data?.message || e?.message || "Yuklashda xatolik");
       } finally {
@@ -484,6 +536,13 @@ export const AttemptResult = () => {
   const tone = toneForPercent(percent);
   const advice = getAdviceForPercent(percent);
 
+  // rekomendatsiya talab qilinadimi?
+  const needsAck = percent < 80 && (data?.recommendations?.length || 0) > 0;
+
+  useEffect(() => {
+    if (!needsAck) setAckRecs(true); // 80%+ yoki tavsiya yo‘q bo‘lsa darrov ochiq
+  }, [needsAck]);
+
   const filteredQs = useMemo(() => {
     if (filter === "all") return questions;
     if (filter === "correct") {
@@ -500,6 +559,48 @@ export const AttemptResult = () => {
       return !(correct && correct.id === my);
     });
   }, [filter, questions, answersMap]);
+
+  // Rel linkni absolute’ga aylantiradi (agar kerak bo‘lsa)
+  const toAbsUrl = (u) => {
+    if (!u) return "";
+    if (/^https?:\/\//i.test(u)) return u;
+    return `${baseURL.replace(/\/$/, "")}${u.startsWith("/") ? "" : "/"}${u}`;
+  };
+
+  // YouTube ID ajratib olish (youtu.be va watch?v= qo‘llab-quvvatlanadi)
+  const getYouTubeId = (url) => {
+    if (!url) return null;
+    try {
+      const u = new URL(toAbsUrl(url));
+      if (u.hostname.includes("youtu.be")) {
+        return u.pathname.replace("/", "");
+      }
+      if (u.hostname.includes("youtube.com")) {
+        return u.searchParams.get("v");
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  // “Nusxa olish” tugmasi
+  const copyRec = async (r) => {
+    const txt = [
+      r.title,
+      r.description,
+      r.video_link ? toAbsUrl(r.video_link) : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+    try {
+      await navigator.clipboard.writeText(txt);
+      // ixtiyoriy: toast qo‘ying
+      // success_notify("Tavsiya nusxalandi");
+    } catch {
+      // xohlasangiz xatoni ko‘rsating
+    }
+  };
 
   return (
     <Fragment>
@@ -612,6 +713,298 @@ export const AttemptResult = () => {
               ))}
             </ul>
           </div>
+
+          {/* ====== System Recommendations from Backend (only if < 80%) ====== */}
+
+          {needsAck && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="inline-grid h-7 w-7 place-items-center rounded-full bg-amber-100 text-amber-700 text-sm">
+                    ★
+                  </span>
+                  <h3 className="text-sm font-semibold text-slate-900">
+                    Siz uchun tavsiyalar
+                  </h3>
+                </div>
+                <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs text-slate-700">
+                  Natija: {percent}%
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {data.recommendations.map((r) => {
+                  const youTubeId = getYouTubeId(r.video_link);
+                  const thumb = youTubeId
+                    ? `https://img.youtube.com/vi/${youTubeId}/hqdefault.jpg`
+                    : null;
+
+                  return (
+                    <article
+                      key={r.id}
+                      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm transition hover:shadow-md"
+                    >
+                      {/* Header: media + title + meta */}
+                      <div className="flex items-start gap-3 p-4">
+                        <div className="shrink-0">
+                          {thumb ? (
+                            <div className="relative h-16 w-28 overflow-hidden rounded-xl ring-1 ring-slate-200">
+                              <img
+                                src={thumb}
+                                alt="preview"
+                                className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                                loading="lazy"
+                              />
+                              <div className="absolute inset-0 grid place-items-center">
+                                <span className="rounded-full bg-black/60 px-2 py-1 text-[10px] text-white">
+                                  YouTube
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="grid h-16 w-16 place-items-center rounded-xl bg-slate-100 text-slate-500 ring-1 ring-slate-200">
+                              <svg
+                                viewBox="0 0 24 24"
+                                className="h-6 w-6"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.6"
+                              >
+                                <path d="M4 7a2 2 0 0 1 2-2h7l5 5v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7z" />
+                                <path d="M14 5v4a1 1 0 0 0 1 1h4" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-semibold text-slate-900">
+                            {r.title}
+                          </h4>
+                          <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                            <time dateTime={r.created_at} title={r.created_at}>
+                              {new Date(r.created_at).toLocaleDateString()}
+                            </time>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Divider above description (only if description exists) */}
+                      {r.description && (
+                        <div className="mx-4 h-px bg-slate-200" />
+                      )}
+
+                      {/* Description at the bottom (above footer) */}
+                      {r.description && (
+                        <div className="px-4 py-3">
+                          <p className="whitespace-pre-wrap break-words text-sm text-slate-700">
+                            {r.description}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Footer actions */}
+                      <div className="flex items-center justify-between gap-2 border-t border-slate-200 bg-white/60 px-4 py-3">
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2 py-1 text-[11px] text-amber-700 ring-1 ring-amber-200">
+                          Tavsiya
+                        </span>
+
+                        <div className="flex items-center gap-2">
+                          {r.video_link && (
+                            <a
+                              href={toAbsUrl(r.video_link)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800 hover:bg-slate-100"
+                            >
+                              <svg
+                                viewBox="0 0 24 24"
+                                className="h-4 w-4"
+                                fill="currentColor"
+                              >
+                                <path d="M10 8l6 4-6 4V8z" />
+                              </svg>
+                              Kirish
+                            </a>
+                          )}
+                          {/* <button
+                            type="button"
+                            onClick={() => copyRec(r)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800 hover:bg-slate-100"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              className="h-4 w-4"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.6"
+                            >
+                              <rect x="9" y="9" width="13" height="13" rx="2" />
+                              <rect x="2" y="2" width="13" height="13" rx="2" />
+                            </svg>
+                            Nusxa olish
+                          </button> */}
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
+              {/* 👉 “Barchasini o‘qidim” tugmasi */}
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAckRecs(true);
+                    // xatolarni ko‘rsatib boshlaymiz:
+                    setFilter("wrong");
+                    // QA bo‘limiga yumshoq scroll
+                    const qa = document.getElementById("qa-block");
+                    if (qa)
+                      qa.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800"
+                >
+                  Barchasini o‘qidim — natijani ko‘rish
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ====== System Recommendations (only if < 80%) ====== */}
+          {/* {percent < 80 && (data?.recommendations?.length || 0) > 0 && (
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="inline-grid h-7 w-7 place-items-center rounded-full bg-amber-100 text-amber-700 text-sm">
+                    ★
+                  </span>
+                  <h3 className="text-sm font-semibold text-slate-900">
+                    Siz uchun tavsiyalar
+                  </h3>
+                </div>
+                <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs text-slate-700">
+                  Natija: {percent}%
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {data.recommendations.map((r) => {
+                  const youTubeId = getYouTubeId(r.video_link);
+                  const thumb = youTubeId
+                    ? `https://img.youtube.com/vi/${youTubeId}/hqdefault.jpg`
+                    : null;
+
+                  return (
+                    <article
+                      key={r.id}
+                      className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm transition hover:shadow-md"
+                    >
+                      <div className="flex items-start gap-3 p-4">
+                        <div className="shrink-0">
+                          {thumb ? (
+                            <div className="relative h-16 w-28 overflow-hidden rounded-xl ring-1 ring-slate-200">
+                              <img
+                                src={thumb}
+                                alt="preview"
+                                className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                                loading="lazy"
+                              />
+                              <div className="absolute inset-0 grid place-items-center">
+                                <span className="rounded-full bg-black/60 px-2 py-1 text-[10px] text-white">
+                                  YouTube
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="grid h-16 w-16 place-items-center rounded-xl bg-slate-100 text-slate-500 ring-1 ring-slate-200">
+                              <svg
+                                viewBox="0 0 24 24"
+                                className="h-6 w-6"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.6"
+                              >
+                                <path d="M4 7a2 2 0 0 1 2-2h7l5 5v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7z" />
+                                <path d="M14 5v4a1 1 0 0 0 1 1h4" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="min-w-0">
+                          <h4 className="line-clamp-2 text-sm font-semibold text-slate-900">
+                            {r.title}
+                          </h4>
+
+                          {r.description && (
+                            <details className="mt-1 [&_summary]:list-none">
+                              <summary className="cursor-pointer text-xs text-slate-500 hover:text-slate-700">
+                                Ko‘proq ko‘rish
+                              </summary>
+                              <p className="mt-1 whitespace-pre-wrap break-words text-sm text-slate-700">
+                                {r.description}
+                              </p>
+                            </details>
+                          )}
+
+                          <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                            <time dateTime={r.created_at} title={r.created_at}>
+                              {new Date(r.created_at).toLocaleDateString()}
+                            </time>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 border-t border-slate-200 bg-white/60 px-4 py-3">
+                        <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2 py-1 text-[11px] text-amber-700 ring-1 ring-amber-200">
+                          Tavsiya
+                        </span>
+
+                        <div className="flex items-center gap-2">
+                          {r.video_link && (
+                            <a
+                              href={toAbsUrl(r.video_link)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800 hover:bg-slate-100"
+                            >
+                              <svg
+                                viewBox="0 0 24 24"
+                                className="h-4 w-4"
+                                fill="currentColor"
+                              >
+                                <path d="M10 8l6 4-6 4V8z" />
+                              </svg>
+                              Video
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => copyRec(r)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs text-slate-800 hover:bg-slate-100"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              className="h-4 w-4"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.6"
+                            >
+                              <rect x="9" y="9" width="13" height="13" rx="2" />
+                              <rect x="2" y="2" width="13" height="13" rx="2" />
+                            </svg>
+                            Nusxa olish
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          )} */}
 
           {/* ====== Filters ====== */}
           <div className="flex flex-wrap items-center gap-2">
