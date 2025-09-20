@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { LayoutDashboard } from "../../components";
+import { AdminSectionTabs, LayoutDashboard } from "../../components";
 import { baseURL } from "../../shared/constants";
 
 async function apiFetch(
@@ -663,6 +663,9 @@ function LinksDashboard() {
     <LayoutDashboard>
       <ToastProvider>
         <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+          <div className="my-4">
+            <AdminSectionTabs />
+          </div>
           {/* Header */}
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
             <div>

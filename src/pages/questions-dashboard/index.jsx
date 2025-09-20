@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from "react";
-import { LayoutDashboard } from "../../components";
+import { AdminSectionTabs, LayoutDashboard } from "../../components";
 import {
   adminGetRequest,
   adminPostRequest,
@@ -252,7 +252,12 @@ export const QuestionsDashboard = () => {
   // ---- UI ----
   return (
     <LayoutDashboard>
-      <div className="p-6 space-y-6">
+      <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+        {/* <div className="p-6 space-y-6"> */}
+        <div className="my-4">
+          <AdminSectionTabs />
+        </div>
+
         {/* Header */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
@@ -262,7 +267,7 @@ export const QuestionsDashboard = () => {
             </p>
           </div>
 
-          <div className="flex w-full items-center gap-3 sm:w-auto">
+          <div className="flex w-full items-center flex-col lg:flex-row gap-3 sm:w-auto">
             <div className="relative w-full sm:w-72">
               <input
                 className="w-full rounded-xl border border-neutral-200 bg-white/60 px-10 py-2.5 text-sm outline-none ring-0 transition focus:border-neutral-300 focus:shadow-sm focus:shadow-neutral-200 dark:border-neutral-800 dark:bg-neutral-900"
@@ -274,7 +279,7 @@ export const QuestionsDashboard = () => {
             </div>
             <button
               onClick={openCreate}
-              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-tr from-neutral-900 to-neutral-700 px-4 py-2.5 text-sm font-medium text-white shadow-sm ring-1 ring-black/5 transition hover:opacity-95 active:opacity-90 dark:from-white dark:to-neutral-200 dark:text-neutral-900"
+              className="w-full lg:w-[180px] inline-flex items-center justify-center rounded-xl bg-gradient-to-tr from-neutral-900 to-neutral-700 px-4 py-2.5 text-sm font-medium text-white shadow-sm ring-1 ring-black/5 transition hover:opacity-95 active:opacity-90 dark:from-white dark:to-neutral-200 dark:text-neutral-900"
             >
               <PlusIcon className="mr-2 h-4 w-4" /> New Question
             </button>
